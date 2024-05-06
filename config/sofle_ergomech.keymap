@@ -67,7 +67,7 @@
 &trans     &kp C_AC_UNDO &kp C_AC_CUT &kp C_AC_COPY &kp C_AC_PASTE &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
                          &trans       &trans        &trans         &trans       &trans  &trans    &trans    &trans    &trans    &trans
                                                                                         &mkp LCLK &kp DOWN  &kp UP    &kp RIGHT &kp LEFT
-            >;c
+            >;
 
             sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
         };
