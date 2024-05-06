@@ -72,22 +72,24 @@
 
         raise_layer {
             label = "raise";
-// ------------------------------------------------------------------------------------------------------------
-// | BTCLR | BT1  | BT2  |  BT3  |  BT4  |  BT5 |                |      |      |       |      |       |       |
-// |       | INS  | PSCR | GUI   |       |      |                | PGUP |      |   ^   |      |       |       |
-// |       | ALT  | CTRL | SHIFT |       | CAPS |                | PGDN |   <- |   v   |  ->  |  DEL  | BKSPC |
-// |       | UNDO | CUT  | COPY  | PASTE |      |      |  |      |      |      |       |      |       |       |
-//                |      |       |       |      |      |  |      |      |      |       |      |
-            bindings = <
-&bt BT_CLR &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2 &bt BT_SEL 3 &bt BT_SEL 4                  &trans    &trans    &trans   &trans    &trans  &trans
-&trans     &kp INS      &kp PSCRN    &kp K_CMENU  &trans       &trans                        &kp PG_UP &trans    &kp UP   &trans    &kp N0  &trans
-&trans     &kp LALT     &kp LCTRL    &kp LSHFT    &trans       &kp CLCK                      &kp PG_DN &kp LEFT  &kp DOWN &kp RIGHT &kp DEL &kp BSPC
-&trans     &kp K_UNDO   &kp K_CUT    &kp K_COPY   &kp K_PASTE  &trans        &trans          &trans    &trans    &trans   &trans    &trans  &trans
-                        &trans       &trans       &trans       &trans        &trans  &trans  &trans    &trans    &trans   &trans
-                                                                                     &kp A      &kp B  &kp C &kp D  &kp E
+// TODO: Some binds are waiting for shifted keycode support.
+// ------------------------------------------------------------------------------------------------------------------------------------------
+// |       |   F1    |   F2    |    F3    |   F4      |   F5     |                  |   F6    |  F7    |  F8    |   F9    |   F10   |  F11  |
+// |       |         |         |          |           |  BSPC    |                  |  BSPC   | HOME   |  UP    |   END   |  PG_UP  |  F12  |
+// |       |         |         |          |           |  RET     |                  |  RET    | LEFT   | DOWN   |  RIGHT  |  PG_DN  |  DEL  |
+// |       | K_UNDO  |  K_CUT  |  K_COPY  | K_PASTE   |  ENTER   |       |  |       |  ENTER  |        |        |         |         |       |
+//                   |         |          |           |          | SPACE |  | SPACE |         |        |        |         |
+//                                                                      HAT:| ENTER |  LEFT   |  UP    |  DOWN  |  RIGHT  |
+            bindings = < 
+&none     &kp F1     &kp F2    &kp F3     &kp F4      &kp F5                        &kp F6    &kp F7   &kp F8   &kp F9    &kp F10   &kp F11
+&none     &none      &none     &none      &none       &kp BSPC                      &kp BSPC  &kp HOME &kp UP   &kp END   &kp PG_UP &kp F12
+&none     &none      &none     &none      &none       &kp RET                       &kp RET   &kp LEFT &kp DOWN &kp RIGHT &kp PG_DN &kp DEL
+&none     &kp K_UNDO &kp K_CUT &kp K_COPY &kp K_PASTE &kp ENTER  &none              &kp ENTER &none    &none    &none     &none     &none
+                     &trans    &trans     &trans      &trans     &trans   &trans    &trans    &trans   &trans   &trans
+                                                                          &kp ENTER &kp LEFT  &kp UP   &kp DOWN &kp RIGHT
             >;
 
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN &inc_dec_kp PG_UP PG_DN>;
+            sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
         };
 
         adjust_layer {
