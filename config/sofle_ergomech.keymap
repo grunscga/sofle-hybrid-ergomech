@@ -56,15 +56,15 @@
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 // | BTCLR |   BT1       |   BT2      |    BT3      |    BT4       |    BT5     |                 |         |         |         |  LBKT   |  RBKT   |  DEL   |
 // |       |   INS       |   BACK     |   FWD       |   CAPS       |            |                 |  BSPC   |  HOME   |  UP     |   END   |  PG_UP  | C_MUTE |
-// |       |   ALT       |   CTRL     |   SHIFT     |              |            |                 |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |C_VOL_UP|
+// |       |   REDO      |            |             |              |            |                 |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |C_VOL_UP|
 // |       |   UNDO      |   CUT      |   COPY      |   PASTE      |            |      |  |       |  ENTER  |  LCLK   |  MCLK   |  RCLK   |         |C_VOL_DN|
 //                       |            |             |              |            | SPACE|  | SPACE |         |         |         |         |
 //                                                                                    HAT:| LCLK  |  DOWN   |    UP   |  RIGHT  |  LEFT   |
             bindings = <
 &bt BT_CLR &bt BT_SEL 0  &bt BT_SEL 1 &bt BT_SEL 2  &bt BT_SEL 3   &bt BT_SEL 4                   &none     &none     &none     &kp LBKT  &kp RBKT  &kp DEL
 &trans     &kp INS       &mkp MB4     &mkp MB5      &kp CAPS       &none                          &kp BSPC  &kp HOME  &kp UP    &kp END   &kp PG_UP &kp C_MUTE
-&trans     &kp LALT      &kp LCTRL    &kp LSHFT     &none          &none                          &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp C_VOL_UP
-&trans     &kp C_AC_UNDO &kp C_AC_CUT &kp C_AC_COPY &kp C_AC_PASTE &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
+&trans     &kp LC(Y)     &none        &none         &none          &none                          &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp C_VOL_UP
+&trans     &kp LC(Z)     &kp LC(X)    &kp LC(C)     &kp LC(V)      &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
                          &trans       &trans        &trans         &trans       &trans  &trans    &trans    &trans    &trans    &trans
                                                                                         &mkp LCLK &kp DOWN  &kp UP    &kp RIGHT &kp LEFT
             >;
@@ -75,20 +75,20 @@
         raise_layer {
             label = "raise";
 // TODO: Some binds are waiting for shifted keycode support.
-// ------------------------------------------------------------------------------------------------------------------------------------------
-// |  ESC  |   F1    |   F2    |    F3    |   F4      |   F5     |                  |   F6    |  F7    |  F8     |   F9    |   F10   |  F11  |
-// |       |         |         |          |           |  BSPC    |                  |  BSPC   | HOME   |  UP     |   END   |  PG_UP  |  F12  |
-// |       |         |         |          |           |  RET     |                  |  RET    | LEFT   | DOWN    |  RIGHT  |  PG_DN  |  DEL  |
-// |       |         |         |          |           |  ENTER   |       |  |       |         |        |         |         |         |       |
-//                   |         |          |           |          | SPACE |  | SPACE |         |        |         |         |
-//                                                                      HAT:| LCLK  |  DOWN   |   UP   |  RIGHT  |  LEFT   |
-            bindings = <
-&kp ESC   &kp F1     &kp F2    &kp F3     &kp F4      &kp F5                        &kp F6    &kp F7   &kp F8    &kp F9    &kp F10   &kp F11
-&trans    &none      &trans    &trans     &none       &kp BSPC                      &kp BSPC  &kp HOME &kp UP    &kp END   &kp PG_UP &kp F12
-&trans    &none      &none     &none      &none       &kp RET                       &kp RET   &kp LEFT &kp DOWN  &kp RIGHT &kp PG_DN &kp DEL
-&trans    &trans     &trans    &trans     &trans      &kp ENTER  &none              &trans    &trans   &trans    &trans    &none     &none
-                     &trans    &trans     &trans      &trans     &trans   &trans    &trans    &trans   &trans    &trans
-                                                                          &mkp LCLK &kp DOWN  &kp UP   &kp RIGHT &kp LEFT
+// --------------------------------------------------------------------------------------------------------------------------------------------
+// |  ESC  |   F1    |   F2    |    F3    |   F4      |   F5     |                  |   F6    |  F7     |  F8     |   F9    |   F10   |  F11  |
+// |       |         |  BACK   |   FWD    |           |  BSPC    |                  |  BSPC   |  HOME   |  UP     |   END   |  PG_UP  |  F12  |
+// |       |  REDO   |         |          |           |  RET     |                  |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |  DEL  |
+// |       |  UNDO   |   CUT   |   COPY   |   PASTE   |  ENTER   |       |  |       |  ENTER  |  LCLK   |  MCLK   |  RCLK   |         |       |
+//                   |         |          |           |          | SPACE |  | SPACE |         |         |         |         |
+//                                                                      HAT:| LCLK  |  DOWN   |   UP    |  RIGHT  |  LEFT   |
+            bindings = < 
+&kp ESC   &kp F1     &kp F2    &kp F3     &kp F4      &kp F5                        &kp F6    &kp F7    &kp F8    &kp F9    &kp F10   &kp F11
+&trans    &none      &mkp MB4  &mkp MB5   &none       &kp BSPC                      &kp BSPC  &kp HOME  &kp UP    &kp END   &kp PG_UP &kp F12
+&trans    &kp LC(Y)  &none     &none      &none       &kp RET                       &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp DEL
+&trans    &kp LC(Z)  &kp LC(X) &kp LC(C)  &kp LC(V)   &kp ENTER  &none              &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &none
+                     &trans    &trans     &trans      &trans     &trans   &trans    &trans    &trans    &trans    &trans
+                                                                          &mkp LCLK &kp DOWN  &kp UP    &kp RIGHT &kp LEFT
             >;
 
             sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
