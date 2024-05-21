@@ -32,20 +32,20 @@
 
         default_layer {
             label = "default";
-// ---------------------------------------------------------------------------------------------------------------------------------------
-// |   `   |   1   |    2    |   3    |   4     |   5      |                     |   6     |    7    |   8     |  9     |   0    |   =   |
-// |  TAB  |   '   |    ,    |   .    |   P     |   Y      |                     |   F     |    G    |   C     |  R     |   L    |   /   |
-// |  CTRL |   A   |    O    |   E    |   U     |   I      |                     |   D     |    H    |   T     |  N     |   S    |   -   |
-// | SHIFT |   ;   |    Q    |   J    |   K     |   X      |  ENTER  |  |        |   B     |    M    |   W     |  V     |   V    |   \   |
-//                 |   GUI   |  ALT   |  LOWER  |  RAISE   |  SPACE  |  |  SPACE |  LEFT   |    UP   |   DOWN  | RIGHT  |
-//                                                                  HAT:|  LCLK  |  DOWN   |    UP   |   RIGHT | LEFT   |
-            bindings = <
-&kp GRAVE &kp N1   &kp N2    &kp N3   &kp N4    &kp N5                           &kp N6    &kp N7    &kp N8    &kp N9   &kp N0   &kp EQUAL
-&kp TAB   &kp APOS &kp COMMA &kp DOT  &kp P     &kp Y                            &kp F     &kp G     &kp C     &kp R    &kp L    &kp FSLH
-&kp LCTRL &kp A    &kp O     &kp E    &kp U     &kp I                            &kp D     &kp H     &kp T     &kp N    &kp S    &kp MINUS
-&kp LSHFT &kp SEMI &kp Q     &kp J    &kp K     &kp X      &kp ENTER             &kp B     &kp M     &kp W     &kp V    &kp V    &kp BSLH
-                   &kp LGUI  &kp LALT &mo RAISE &mo LOWER  &kp SPACE  &kp SPACE  &kp LEFT  &kp UP    &kp DOWN  &kp RIGHT
-                                                                      &mkp LCLK  &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
+// ----------------------------------------------------------------------------------------------------------------------------------------
+// |   `   |   1   |    2    |   3     |   4     |   5      |                     |   6     |    7    |   8     |  9     |   0    |   =   |
+// |  TAB  |   '   |    ,    |   .     |   P     |   Y      |                     |   F     |    G    |   C     |  R     |   L    |   /   |
+// |  CTRL |   A   |    O    |   E     |   U     |   I      |                     |   D     |    H    |   T     |  N     |   S    |   -   |
+// | SHIFT |   ;   |    Q    |   J     |   K     |   X      |  ENTER  |  |        |   B     |    M    |   W     |  V     |   V    |   \   |
+//                 |   GUI   |  LOWER  |  RAISE  |   ALT    |  SPACE  |  |  SPACE |  DEL    |    CTRL |   SHIFT | ENTER  |
+//                                                                   HAT:|  LCLK  |  DOWN   |    UP   |   RIGHT | LEFT   |
+            bindings = < 
+&kp GRAVE &kp N1   &kp N2    &kp N3    &kp N4    &kp N5                           &kp N6    &kp N7    &kp N8    &kp N9   &kp N0   &kp EQUAL
+&kp TAB   &kp APOS &kp COMMA &kp DOT   &kp P     &kp Y                            &kp F     &kp G     &kp C     &kp R    &kp L    &kp FSLH
+&kp LCTRL &kp A    &kp O     &kp E     &kp U     &kp I                            &kp D     &kp H     &kp T     &kp N    &kp S    &kp MINUS
+&kp LSHFT &kp SEMI &kp Q     &kp J     &kp K     &kp X      &kp ENTER             &kp B     &kp M     &kp W     &kp V    &kp V    &kp BSLH
+                   &kp LGUI  &mo LOWER &mo RAISE &kp LALT   &kp SPACE  &kp SPACE  &kp DEL   &kp RCTRL &kp RSHFT &kp ENTER
+                                                                       &mkp LCLK  &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
             >;
 
             sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
@@ -54,14 +54,14 @@
         lower_layer {
             label = "lower";
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
-// | BTCLR |   BT1       |   BT2      |    BT3      |    BT4       |    BT5     |                 |         |         |         |  LBKT   |  RBKT   |  DEL   |
+// |       |             |            |             |              |            |                 |         |         |         |  LBKT   |  RBKT   |  DEL   |
 // |       |   INS       |   BACK     |   FWD       |   CAPS       |            |                 |  BSPC   |  HOME   |  UP     |   END   |  PG_UP  | C_MUTE |
 // |       |   REDO      |            |             |              |            |                 |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |C_VOL_UP|
 // |       |   UNDO      |   CUT      |   COPY      |   PASTE      |            |      |  |       |  ENTER  |  LCLK   |  MCLK   |  RCLK   |         |C_VOL_DN|
 //                       |            |             |              |            | SPACE|  | SPACE |         |         |         |         |
 //                                                                                    HAT:| LCLK  |  DOWN   |    UP   |  RIGHT  |  LEFT   |
             bindings = <
-&bt BT_CLR &bt BT_SEL 0  &bt BT_SEL 1 &bt BT_SEL 2  &bt BT_SEL 3   &bt BT_SEL 4                   &none     &none     &none     &kp LBKT  &kp RBKT  &kp DEL
+&none      &none         &none        &none         &none          &none                   &none     &none     &none     &kp LBKT  &kp RBKT  &kp DEL
 &trans     &kp INS       &mkp MB4     &mkp MB5      &kp CAPS       &none                          &kp BSPC  &kp HOME  &kp UP    &kp END   &kp PG_UP &kp C_MUTE
 &trans     &kp LC(Y)     &none        &none         &none          &none                          &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp C_VOL_UP
 &trans     &kp LC(Z)     &kp LC(X)    &kp LC(C)     &kp LC(V)      &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
