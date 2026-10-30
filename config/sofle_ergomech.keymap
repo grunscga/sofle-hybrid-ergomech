@@ -9,14 +9,27 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/rgb.h>
 #include <dt-bindings/zmk/ext_power.h>
-#include <dt-bindings/zmk/mouse.h>
+#include <dt-bindings/zmk/pointing.h>
 
 #define BASE 0
 #define LOWER 1
 #define RAISE 2
 #define ADJUST 3
 
+/* &msc ticks every 16ms. 80 * 16 / 1000 truncates to one wheel notch,
+ * and the 20ms encoder tap ends before the next tick. */
+#define WHEEL_UP MOVE_Y(80)
+#define WHEEL_DN MOVE_Y(-80)
+
 / {
+    behaviors {
+        scroll_wheel: scroll_wheel {
+            compatible = "zmk,behavior-sensor-rotate-var";
+            #sensor-binding-cells = <2>;
+            bindings = <&msc>, <&msc>;
+            tap-ms = <20>;
+        };
+    };
 
    // Activate ADJUST layer by pressing raise and lower
     conditional_layers {
@@ -38,17 +51,17 @@
 // |  CTRL |   A   |    O    |   E    |   U     |   I      |                     |   D     |    H    |   T     |  N     |   S    |   -   |
 // | SHIFT |   ;   |    Q    |   J    |   K     |   X      |  ENTER  |  |        |   B     |    M    |   W     |  V     |   V    |   \   |
 //                 |   GUI   |  ALT   |  LOWER  |  RAISE   |  SPACE  |  |  SPACE |  LEFT   |    UP   |   DOWN  | RIGHT  |
-//                                                                  HAT:|  LCLK  |  DOWN   |    UP   |   RIGHT | LEFT   |
+//                                                                  HAT:|  LCLK  | MOVE_R  | MOVE_U  | MOVE_L  | MOVE_D |
             bindings = <
 &kp GRAVE &kp N1   &kp N2    &kp N3   &kp N4    &kp N5                           &kp N6    &kp N7    &kp N8    &kp N9   &kp N0   &kp EQUAL
 &kp TAB   &kp APOS &kp COMMA &kp DOT  &kp P     &kp Y                            &kp F     &kp G     &kp C     &kp R    &kp L    &kp FSLH
 &kp LCTRL &kp A    &kp O     &kp E    &kp U     &kp I                            &kp D     &kp H     &kp T     &kp N    &kp S    &kp MINUS
 &kp LSHFT &kp SEMI &kp Q     &kp J    &kp K     &kp X      &kp ENTER             &kp B     &kp M     &kp W     &kp V    &kp V    &kp BSLH
                    &kp LGUI  &kp LALT &mo RAISE &mo LOWER  &kp SPACE  &kp SPACE  &kp LEFT  &kp UP    &kp DOWN  &kp RIGHT
-                                                                      &mkp LCLK  &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
+                                                                      &mkp LCLK  &mmv MOVE_RIGHT &mmv MOVE_UP &mmv MOVE_LEFT &mmv MOVE_DOWN
             >;
 
-            sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
+            sensor-bindings = <&scroll_wheel WHEEL_UP WHEEL_DN &scroll_wheel WHEEL_UP WHEEL_DN>;
         };
 
         lower_layer {
@@ -59,17 +72,17 @@
 // |       |   REDO      |            |             |              |            |                 |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |C_VOL_UP|
 // |       |   UNDO      |   CUT      |   COPY      |   PASTE      |            |      |  |       |  ENTER  |  LCLK   |  MCLK   |  RCLK   |         |C_VOL_DN|
 //                       |            |             |              |            | SPACE|  | SPACE |         |         |         |         |
-//                                                                                    HAT:| LCLK  |  DOWN   |    UP   |  RIGHT  |  LEFT   |
+//                                                                                    HAT:| LCLK  | MOVE_R  | MOVE_U  | MOVE_L  | MOVE_D |
             bindings = <
 &bt BT_CLR &bt BT_SEL 0  &bt BT_SEL 1 &bt BT_SEL 2  &bt BT_SEL 3   &bt BT_SEL 4                   &none     &none     &none     &kp LBKT  &kp RBKT  &kp DEL
 &trans     &kp INS       &mkp MB4     &mkp MB5      &kp CAPS       &none                          &kp BSPC  &kp HOME  &kp UP    &kp END   &kp PG_UP &kp C_MUTE
 &trans     &kp LC(Y)     &none        &none         &none          &none                          &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp C_VOL_UP
 &trans     &kp LC(Z)     &kp LC(X)    &kp LC(C)     &kp LC(V)      &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
                          &trans       &trans        &trans         &trans       &trans  &trans    &trans    &trans    &trans    &trans
-                                                                                        &mkp LCLK &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
+                                                                                        &mkp LCLK &mmv MOVE_RIGHT &mmv MOVE_UP &mmv MOVE_LEFT &mmv MOVE_DOWN
             >;
 
-            sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
+            sensor-bindings = <&scroll_wheel WHEEL_UP WHEEL_DN &scroll_wheel WHEEL_UP WHEEL_DN>;
         };
 
         raise_layer {
@@ -91,7 +104,7 @@
                                                                           &mkp LCLK &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
             >;
 
-            sensor-bindings = <&inc_dec_kp PG_UP PG_DN &inc_dec_kp PG_UP PG_DN>;
+            sensor-bindings = <&scroll_wheel WHEEL_UP WHEEL_DN &scroll_wheel WHEEL_UP WHEEL_DN>;
         };
 
         adjust_layer {
@@ -111,6 +124,8 @@
                                   &none           &none           &none           &none            &none           &none      &none     &none     &none     &none
                                                                                                                    &mkp LCLK  &kp RIGHT &kp UP    &kp LEFT  &kp DOWN
             >;
+
+            sensor-bindings = <&scroll_wheel WHEEL_UP WHEEL_DN &scroll_wheel WHEEL_UP WHEEL_DN>;
         };
 
     };
