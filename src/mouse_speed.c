@@ -35,6 +35,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/display.h>
 #endif
 
+static void mouse_speed_display_refresh(void);
+
 struct mouse_speed_settings {
     uint8_t ble[MOUSE_SPEED_BLE_SLOTS];
     uint8_t usb;
@@ -86,6 +88,7 @@ static int mouse_speed_settings_set(const char *name, size_t len, settings_read_
     }
     loaded.usb = clamp_rung(loaded.usb);
     slots = loaded;
+    mouse_speed_display_refresh();
     return 0;
 }
 
@@ -120,154 +123,157 @@ static int save_slots(void) {
     return rc;
 }
 
-#if IS_ENABLED(CONFIG_ZMK_DISPLAY)
+#if IS_ENABLED(CONFIG_ZMK_DISPLAY) && IS_ENABLED(CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)
 
-/* Cover the status screen. Swapping screens leaves the wireless glyph scrambled
- * until a later label update redraws it on its own.
+#include <zmk/display/status_screen.h>
+#include <zmk/display/widgets/battery_status.h>
+#include <zmk/display/widgets/layer_status.h>
+#include <zmk/display/widgets/output_status.h>
+#include <zmk/event_manager.h>
+#include <zmk/events/ble_active_profile_changed.h>
+#include <zmk/events/endpoint_changed.h>
+
+LV_FONT_DECLARE(lv_font_montserrat_12)
+LV_FONT_DECLARE(lv_font_montserrat_8)
+
+/* Private-use character. Montserrat has no mouse glyph. */
+#define MOUSE_ICON "\xEE\x80\x80"
+
+/* 8x7, 4bpp, high nibble first. Same glyph path as the status icons.
+ *   ..####..
+ *   .##..##.
+ *   .##..##.
+ *   .######.
+ *   .##..##.
+ *   .######.
+ *   ..####..
  */
-static lv_obj_t *speed_overlay;
+static const uint8_t mouse_icon_bitmap[] = {
+    0x00, 0xFF, 0xFF, 0x00, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xFF,
+    0xFF, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xFF, 0xFF, 0xF0, 0x00, 0xFF, 0xFF, 0x00,
+};
+
+static const lv_font_fmt_txt_glyph_dsc_t mouse_icon_glyph_dsc[] = {
+    {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0},
+    {.bitmap_index = 0, .adv_w = 144, .box_w = 8, .box_h = 7, .ofs_x = 0, .ofs_y = 0},
+};
+
+static const lv_font_fmt_txt_cmap_t mouse_icon_cmaps[] = {
+    {
+        .range_start = 0xE000,
+        .range_length = 1,
+        .glyph_id_start = 1,
+        .unicode_list = NULL,
+        .glyph_id_ofs_list = NULL,
+        .list_length = 0,
+        .type = LV_FONT_FMT_TXT_CMAP_FORMAT0_TINY,
+    },
+};
+
+static const lv_font_fmt_txt_dsc_t mouse_icon_dsc = {
+    .glyph_bitmap = mouse_icon_bitmap,
+    .glyph_dsc = mouse_icon_glyph_dsc,
+    .cmaps = mouse_icon_cmaps,
+    .kern_dsc = NULL,
+    .kern_scale = 0,
+    .cmap_num = 1,
+    .bpp = 4,
+    .kern_classes = 0,
+    .bitmap_format = LV_FONT_FMT_TXT_PLAIN,
+};
+
+/* line_height and base_line match Montserrat 8, so the icon sits on the
+ * speed digits. An ofs_y of 0 puts the 7px body one pixel below the line top. */
+static const lv_font_t mouse_icon_font = {
+    .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,
+    .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,
+    .line_height = 10,
+    .base_line = 2,
+    .subpx = LV_FONT_SUBPX_NONE,
+    .kerning = LV_FONT_KERNING_NONE,
+    .underline_position = 0,
+    .underline_thickness = 0,
+    .dsc = &mouse_icon_dsc,
+};
+
+/* Montserrat 12 is 15px and Montserrat 8 is 10px. The panel is 32px, so the
+ * status icons stay at 12 and the two lower rows use 8. The 12px font's 3px
+ * of baseline padding is where the layer row starts. */
+#define LAYER_ROW_Y 12
+#define SPEED_ROW_Y 22
+#define SPEED_TEXT_X 11
+
 static lv_obj_t *speed_label;
-static uint16_t shown_speed;
 
-static lv_obj_t *output_status_label(lv_obj_t *screen) {
-    lv_obj_t *best = NULL;
-    uint32_t count = lv_obj_get_child_count(screen);
-
-    for (uint32_t i = 0; i < count; i++) {
-        lv_obj_t *child = lv_obj_get_child(screen, i);
-        if (!lv_obj_check_type(child, &lv_label_class)) {
-            continue;
-        }
-        if (best == NULL || lv_obj_get_y(child) < lv_obj_get_y(best) ||
-            (lv_obj_get_y(child) == lv_obj_get_y(best) && lv_obj_get_x(child) < lv_obj_get_x(best))) {
-            best = child;
-        }
+static void speed_label_update(uint16_t speed) {
+    if (speed_label == NULL) {
+        return;
     }
-    return best;
+    lv_label_set_text_fmt(speed_label, "%u", (unsigned int)speed);
 }
 
-static void repair_output_icon(struct k_work *work) {
-    ARG_UNUSED(work);
-
-    if (speed_overlay != NULL || !zmk_display_is_initialized()) {
-        return;
-    }
-
-    lv_obj_t *screen = lv_screen_active();
-    lv_obj_t *label = screen == NULL ? NULL : output_status_label(screen);
-    if (label == NULL) {
-        return;
-    }
-
-    const char *text = lv_label_get_text(label);
-    if (text == NULL) {
-        return;
-    }
-
-    char copy[32];
-    size_t n = 0;
-    while (n < sizeof(copy) - 1 && text[n] != '\0') {
-        copy[n] = text[n];
-        n++;
-    }
-    copy[n] = '\0';
-    lv_label_set_text(label, copy);
+static uint16_t speed_label_get_state(const zmk_event_t *eh) {
+    ARG_UNUSED(eh);
+    return mouse_speed_current();
 }
 
-K_WORK_DEFINE(repair_output_work, repair_output_icon);
+ZMK_DISPLAY_WIDGET_LISTENER(mouse_speed_status, uint16_t, speed_label_update, speed_label_get_state)
+ZMK_SUBSCRIPTION(mouse_speed_status, zmk_endpoint_changed);
+#if defined(CONFIG_ZMK_BLE)
+ZMK_SUBSCRIPTION(mouse_speed_status, zmk_ble_active_profile_changed);
+#endif
 
-static bool repair_armed;
-static bool repair_cb_added;
+static void mouse_speed_display_refresh(void) { mouse_speed_status_cb(NULL); }
 
-static void on_refr_ready(lv_event_t *event) {
-    ARG_UNUSED(event);
-    if (!repair_armed) {
-        return;
-    }
-    repair_armed = false;
-    k_work_submit_to_queue(zmk_display_work_q(), &repair_output_work);
-}
+lv_obj_t *zmk_display_status_screen() {
+    lv_obj_t *screen = lv_obj_create(NULL);
 
-static void hide_speed_screen(struct k_work *work) {
-    ARG_UNUSED(work);
-    if (speed_overlay == NULL) {
-        return;
-    }
+#if IS_ENABLED(CONFIG_ZMK_WIDGET_BATTERY_STATUS)
+    static struct zmk_widget_battery_status battery_status_widget;
 
-    lv_obj_delete(speed_overlay);
-    speed_overlay = NULL;
-    speed_label = NULL;
+    zmk_widget_battery_status_init(&battery_status_widget, screen);
+    lv_obj_set_style_text_font(zmk_widget_battery_status_obj(&battery_status_widget),
+                               &lv_font_montserrat_12, LV_PART_MAIN);
+    lv_obj_align(zmk_widget_battery_status_obj(&battery_status_widget), LV_ALIGN_TOP_RIGHT, 0, 0);
+#endif
 
-    /* The refresh that uncovers the status screen can still scramble the wireless
-     * glyph. Rewrite that label after the refresh, which is the draw that clears it.
-     */
-    lv_display_t *disp = lv_display_get_default();
-    if (disp == NULL) {
-        return;
-    }
-    if (!repair_cb_added) {
-        lv_display_add_event_cb(disp, on_refr_ready, LV_EVENT_REFR_READY, NULL);
-        repair_cb_added = true;
-    }
-    repair_armed = true;
-}
+#if IS_ENABLED(CONFIG_ZMK_WIDGET_OUTPUT_STATUS)
+    static struct zmk_widget_output_status output_status_widget;
 
-K_WORK_DELAYABLE_DEFINE(hide_speed_work, hide_speed_screen);
+    zmk_widget_output_status_init(&output_status_widget, screen);
+    lv_obj_set_style_text_font(zmk_widget_output_status_obj(&output_status_widget),
+                               &lv_font_montserrat_12, LV_PART_MAIN);
+    lv_obj_align(zmk_widget_output_status_obj(&output_status_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+#endif
 
-static void show_speed_screen(struct k_work *work) {
-    ARG_UNUSED(work);
+#if IS_ENABLED(CONFIG_ZMK_WIDGET_LAYER_STATUS)
+    static struct zmk_widget_layer_status layer_status_widget;
 
-    if (!zmk_display_is_initialized()) {
-        return;
-    }
+    zmk_widget_layer_status_init(&layer_status_widget, screen);
+    lv_obj_set_style_text_font(zmk_widget_layer_status_obj(&layer_status_widget),
+                               &lv_font_montserrat_8, LV_PART_MAIN);
+    lv_obj_align(zmk_widget_layer_status_obj(&layer_status_widget), LV_ALIGN_TOP_LEFT, 0,
+                 LAYER_ROW_Y);
+#endif
 
-    if (speed_overlay == NULL) {
-        lv_obj_t *top = lv_layer_top();
-        if (top == NULL) {
-            return;
-        }
+    lv_obj_t *icon = lv_label_create(screen);
+    lv_obj_set_style_text_font(icon, &mouse_icon_font, LV_PART_MAIN);
+    lv_label_set_text(icon, MOUSE_ICON);
+    lv_obj_align(icon, LV_ALIGN_TOP_LEFT, 0, SPEED_ROW_Y);
 
-        speed_overlay = lv_obj_create(top);
-        if (speed_overlay == NULL) {
-            return;
-        }
-        lv_obj_set_size(speed_overlay, lv_display_get_horizontal_resolution(NULL),
-                        lv_display_get_vertical_resolution(NULL));
-        lv_obj_set_style_radius(speed_overlay, 0, LV_PART_MAIN);
-        lv_obj_set_style_border_width(speed_overlay, 0, LV_PART_MAIN);
-        lv_obj_set_style_pad_all(speed_overlay, 0, LV_PART_MAIN);
-        lv_obj_set_style_bg_opa(speed_overlay, LV_OPA_COVER, LV_PART_MAIN);
-        lv_obj_remove_flag(speed_overlay, LV_OBJ_FLAG_SCROLLABLE);
+    speed_label = lv_label_create(screen);
+    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_8, LV_PART_MAIN);
+    lv_obj_align(speed_label, LV_ALIGN_TOP_LEFT, SPEED_TEXT_X, SPEED_ROW_Y);
+    mouse_speed_status_init();
 
-        speed_label = lv_label_create(speed_overlay);
-        if (speed_label == NULL) {
-            lv_obj_delete(speed_overlay);
-            speed_overlay = NULL;
-            return;
-        }
-        lv_obj_set_style_text_font(speed_label, LV_FONT_DEFAULT, LV_PART_MAIN);
-        lv_obj_align(speed_label, LV_ALIGN_CENTER, 0, 0);
-    }
-
-    lv_obj_move_foreground(speed_overlay);
-    lv_label_set_text_fmt(speed_label, "%u", (unsigned int)shown_speed);
-    k_work_reschedule_for_queue(zmk_display_work_q(), &hide_speed_work, K_MSEC(1000));
-}
-
-K_WORK_DEFINE(show_speed_work, show_speed_screen);
-
-static void queue_speed_screen(uint16_t speed) {
-    shown_speed = speed;
-    if (zmk_display_is_initialized()) {
-        k_work_submit_to_queue(zmk_display_work_q(), &show_speed_work);
-    }
+    return screen;
 }
 
 #else
 
-static void queue_speed_screen(uint16_t speed) { ARG_UNUSED(speed); }
+static void mouse_speed_display_refresh(void) {}
 
-#endif /* CONFIG_ZMK_DISPLAY */
+#endif /* custom status screen */
 
 uint16_t mouse_speed_adjust(int direction) {
     uint8_t *slot = active_slot();
@@ -288,7 +294,7 @@ uint16_t mouse_speed_adjust(int direction) {
 
     uint16_t speed = speeds[rung];
     LOG_DBG("Mouse speed %d", speed);
-    queue_speed_screen(speed);
+    mouse_speed_display_refresh();
     return speed;
 }
 

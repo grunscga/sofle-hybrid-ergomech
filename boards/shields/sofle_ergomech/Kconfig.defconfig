@@ -9,6 +9,40 @@ config ZMK_KEYBOARD_NAME
 config ZMK_SPLIT_ROLE_CENTRAL
     default y
 
+if ZMK_DISPLAY
+
+# The left OLED adds a cursor-speed row to the normal status screen.
+# The right half keeps the built-in peripheral screen.
+choice ZMK_DISPLAY_STATUS_SCREEN
+    default ZMK_DISPLAY_STATUS_SCREEN_CUSTOM
+endchoice
+
+# The built-in screen implies these. A custom screen has to ask.
+config ZMK_WIDGET_BATTERY_STATUS
+    default y
+
+config ZMK_WIDGET_OUTPUT_STATUS
+    default y
+
+config ZMK_WIDGET_LAYER_STATUS
+    default y
+
+config LV_USE_THEME_MONO
+    default y
+
+# 12px status icons, 8px layer name and speed. See the status screen.
+config LV_FONT_MONTSERRAT_12
+    default y
+
+config LV_FONT_MONTSERRAT_8
+    default y
+
+choice LV_FONT_DEFAULT
+    default LV_FONT_DEFAULT_MONTSERRAT_12
+endchoice
+
+endif # ZMK_DISPLAY
+
 endif
 
 if SHIELD_SOFLE_ERGOMECH_LEFT || SHIELD_SOFLE_ERGOMECH_RIGHT
@@ -28,10 +62,12 @@ endif # ZMK_DISPLAY
 
 if LVGL
 
-# 4096 fits the stock widgets and nothing else. The speed number is an
-# extra label, and glyph draws past that point come out as static.
+# 4096 fits the stock widgets and nothing else. Glyph draws past that
+# point come out as static. The left half's speed row is one more label,
+# and this default has to apply to that custom screen too: ZMK's own
+# default is 4096 only for the built-in screen.
 config LV_Z_MEM_POOL_SIZE
-    default 8192 if ZMK_DISPLAY_STATUS_SCREEN_BUILT_IN
+    default 8192
 
 config LV_Z_VDB_SIZE
     default 64
