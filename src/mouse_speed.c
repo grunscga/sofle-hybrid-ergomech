@@ -122,39 +122,94 @@ static int save_slots(void) {
 
 #if IS_ENABLED(CONFIG_ZMK_DISPLAY)
 
-#if defined(LVGL_VERSION_MAJOR) && LVGL_VERSION_MAJOR >= 9
-#define ms_scr_act lv_screen_active
-#define ms_scr_load lv_screen_load
-#else
-#define ms_scr_act lv_scr_act
-#define ms_scr_load lv_scr_load
-#endif
-
-/* Freed on the way back to the status screen. Leaving it allocated exhausts the
- * LVGL pool, and the next glyph draw copies uninitialized bytes into the icons.
+/* Cover the status screen. Swapping screens leaves the wireless glyph scrambled
+ * until a later label update redraws it on its own.
  */
-static lv_obj_t *speed_screen;
+static lv_obj_t *speed_overlay;
 static lv_obj_t *speed_label;
-static lv_obj_t *saved_screen;
 static uint16_t shown_speed;
 
-static void hide_speed_screen(struct k_work *work) {
+static lv_obj_t *output_status_label(lv_obj_t *screen) {
+    lv_obj_t *best = NULL;
+    uint32_t count = lv_obj_get_child_count(screen);
+
+    for (uint32_t i = 0; i < count; i++) {
+        lv_obj_t *child = lv_obj_get_child(screen, i);
+        if (!lv_obj_check_type(child, &lv_label_class)) {
+            continue;
+        }
+        if (best == NULL || lv_obj_get_y(child) < lv_obj_get_y(best) ||
+            (lv_obj_get_y(child) == lv_obj_get_y(best) && lv_obj_get_x(child) < lv_obj_get_x(best))) {
+            best = child;
+        }
+    }
+    return best;
+}
+
+static void repair_output_icon(struct k_work *work) {
     ARG_UNUSED(work);
-    if (speed_screen == NULL) {
+
+    if (speed_overlay != NULL || !zmk_display_is_initialized()) {
         return;
     }
 
-    lv_obj_t *status = saved_screen;
-    if (status != NULL && status != speed_screen) {
-        ms_scr_load(status);
+    lv_obj_t *screen = lv_screen_active();
+    lv_obj_t *label = screen == NULL ? NULL : output_status_label(screen);
+    if (label == NULL) {
+        return;
     }
-    lv_obj_delete(speed_screen);
-    speed_screen = NULL;
+
+    const char *text = lv_label_get_text(label);
+    if (text == NULL) {
+        return;
+    }
+
+    char copy[32];
+    size_t n = 0;
+    while (n < sizeof(copy) - 1 && text[n] != '\0') {
+        copy[n] = text[n];
+        n++;
+    }
+    copy[n] = '\0';
+    lv_label_set_text(label, copy);
+}
+
+K_WORK_DEFINE(repair_output_work, repair_output_icon);
+
+static bool repair_armed;
+static bool repair_cb_added;
+
+static void on_refr_ready(lv_event_t *event) {
+    ARG_UNUSED(event);
+    if (!repair_armed) {
+        return;
+    }
+    repair_armed = false;
+    k_work_submit_to_queue(zmk_display_work_q(), &repair_output_work);
+}
+
+static void hide_speed_screen(struct k_work *work) {
+    ARG_UNUSED(work);
+    if (speed_overlay == NULL) {
+        return;
+    }
+
+    lv_obj_delete(speed_overlay);
+    speed_overlay = NULL;
     speed_label = NULL;
-    saved_screen = NULL;
-    if (status != NULL) {
-        lv_obj_invalidate(status);
+
+    /* The refresh that uncovers the status screen can still scramble the wireless
+     * glyph. Rewrite that label after the refresh, which is the draw that clears it.
+     */
+    lv_display_t *disp = lv_display_get_default();
+    if (disp == NULL) {
+        return;
     }
+    if (!repair_cb_added) {
+        lv_display_add_event_cb(disp, on_refr_ready, LV_EVENT_REFR_READY, NULL);
+        repair_cb_added = true;
+    }
+    repair_armed = true;
 }
 
 K_WORK_DELAYABLE_DEFINE(hide_speed_work, hide_speed_screen);
@@ -166,28 +221,35 @@ static void show_speed_screen(struct k_work *work) {
         return;
     }
 
-    if (speed_screen == NULL) {
-        lv_obj_t *active = ms_scr_act();
-        if (active == NULL) {
+    if (speed_overlay == NULL) {
+        lv_obj_t *top = lv_layer_top();
+        if (top == NULL) {
             return;
         }
 
-        speed_screen = lv_obj_create(NULL);
-        if (speed_screen == NULL) {
+        speed_overlay = lv_obj_create(top);
+        if (speed_overlay == NULL) {
             return;
         }
-        speed_label = lv_label_create(speed_screen);
+        lv_obj_set_size(speed_overlay, lv_display_get_horizontal_resolution(NULL),
+                        lv_display_get_vertical_resolution(NULL));
+        lv_obj_set_style_radius(speed_overlay, 0, LV_PART_MAIN);
+        lv_obj_set_style_border_width(speed_overlay, 0, LV_PART_MAIN);
+        lv_obj_set_style_pad_all(speed_overlay, 0, LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(speed_overlay, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_remove_flag(speed_overlay, LV_OBJ_FLAG_SCROLLABLE);
+
+        speed_label = lv_label_create(speed_overlay);
         if (speed_label == NULL) {
-            lv_obj_delete(speed_screen);
-            speed_screen = NULL;
+            lv_obj_delete(speed_overlay);
+            speed_overlay = NULL;
             return;
         }
         lv_obj_set_style_text_font(speed_label, LV_FONT_DEFAULT, LV_PART_MAIN);
         lv_obj_align(speed_label, LV_ALIGN_CENTER, 0, 0);
-        saved_screen = active;
-        ms_scr_load(speed_screen);
     }
 
+    lv_obj_move_foreground(speed_overlay);
     lv_label_set_text_fmt(speed_label, "%u", (unsigned int)shown_speed);
     k_work_reschedule_for_queue(zmk_display_work_q(), &hide_speed_work, K_MSEC(1000));
 }
