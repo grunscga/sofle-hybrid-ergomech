@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Greg Grunschel
+# SPDX-License-Identifier: MIT
+
+description: Scale hat cursor counts by the saved per-host speed
+
+compatible: "zmk,input-processor-mouse-speed"
+
+include: ip_zero_param.yaml
