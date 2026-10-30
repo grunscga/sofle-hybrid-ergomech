@@ -130,6 +130,9 @@ static int save_slots(void) {
 #define ms_scr_load lv_scr_load
 #endif
 
+/* Freed on the way back to the status screen. Leaving it allocated exhausts the
+ * LVGL pool, and the next glyph draw copies uninitialized bytes into the icons.
+ */
 static lv_obj_t *speed_screen;
 static lv_obj_t *speed_label;
 static lv_obj_t *saved_screen;
@@ -137,8 +140,20 @@ static uint16_t shown_speed;
 
 static void hide_speed_screen(struct k_work *work) {
     ARG_UNUSED(work);
-    if (saved_screen != NULL) {
-        ms_scr_load(saved_screen);
+    if (speed_screen == NULL) {
+        return;
+    }
+
+    lv_obj_t *status = saved_screen;
+    if (status != NULL && status != speed_screen) {
+        ms_scr_load(status);
+    }
+    lv_obj_delete(speed_screen);
+    speed_screen = NULL;
+    speed_label = NULL;
+    saved_screen = NULL;
+    if (status != NULL) {
+        lv_obj_invalidate(status);
     }
 }
 
@@ -152,19 +167,28 @@ static void show_speed_screen(struct k_work *work) {
     }
 
     if (speed_screen == NULL) {
+        lv_obj_t *active = ms_scr_act();
+        if (active == NULL) {
+            return;
+        }
+
         speed_screen = lv_obj_create(NULL);
+        if (speed_screen == NULL) {
+            return;
+        }
         speed_label = lv_label_create(speed_screen);
+        if (speed_label == NULL) {
+            lv_obj_delete(speed_screen);
+            speed_screen = NULL;
+            return;
+        }
         lv_obj_set_style_text_font(speed_label, LV_FONT_DEFAULT, LV_PART_MAIN);
         lv_obj_align(speed_label, LV_ALIGN_CENTER, 0, 0);
-    }
-
-    lv_obj_t *active = ms_scr_act();
-    if (active != speed_screen) {
         saved_screen = active;
+        ms_scr_load(speed_screen);
     }
 
     lv_label_set_text_fmt(speed_label, "%u", (unsigned int)shown_speed);
-    ms_scr_load(speed_screen);
     k_work_reschedule_for_queue(zmk_display_work_q(), &hide_speed_work, K_MSEC(1000));
 }
 
