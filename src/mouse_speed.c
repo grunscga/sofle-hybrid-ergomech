@@ -133,29 +133,33 @@ static int save_slots(void) {
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/endpoint_changed.h>
 
+LV_FONT_DECLARE(lv_font_montserrat_16)
 LV_FONT_DECLARE(lv_font_montserrat_12)
-LV_FONT_DECLARE(lv_font_montserrat_8)
 
 /* Private-use character. Montserrat has no mouse glyph. */
 #define MOUSE_ICON "\xEE\x80\x80"
 
-/* 8x7, 4bpp, high nibble first. Same glyph path as the status icons.
- *   ..####..
- *   .##..##.
- *   .##..##.
- *   .######.
- *   .##..##.
- *   .######.
- *   ..####..
+/* 12x9, 4bpp, high nibble first. Same glyph path as the status icons.
+ *   ..########..
+ *   .##########.
+ *   .###....###.
+ *   .###....###.
+ *   .##########.
+ *   .####..####.
+ *   .##########.
+ *   ..########..
+ *   ...######...
  */
 static const uint8_t mouse_icon_bitmap[] = {
-    0x00, 0xFF, 0xFF, 0x00, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xFF,
-    0xFF, 0xF0, 0x0F, 0xF0, 0x0F, 0xF0, 0x0F, 0xFF, 0xFF, 0xF0, 0x00, 0xFF, 0xFF, 0x00,
+    0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xF0, 0x0F, 0xFF, 0x00, 0x00,
+    0xFF, 0xF0, 0x0F, 0xFF, 0x00, 0x00, 0xFF, 0xF0, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xF0, 0x0F, 0xFF,
+    0xF0, 0x0F, 0xFF, 0xF0, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xF0, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
+    0x00, 0x0F, 0xFF, 0xFF, 0xF0, 0x00,
 };
 
 static const lv_font_fmt_txt_glyph_dsc_t mouse_icon_glyph_dsc[] = {
     {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0},
-    {.bitmap_index = 0, .adv_w = 144, .box_w = 8, .box_h = 7, .ofs_x = 0, .ofs_y = 0},
+    {.bitmap_index = 0, .adv_w = 192, .box_w = 12, .box_h = 9, .ofs_x = 0, .ofs_y = 0},
 };
 
 static const lv_font_fmt_txt_cmap_t mouse_icon_cmaps[] = {
@@ -182,26 +186,21 @@ static const lv_font_fmt_txt_dsc_t mouse_icon_dsc = {
     .bitmap_format = LV_FONT_FMT_TXT_PLAIN,
 };
 
-/* line_height and base_line match Montserrat 8, so the icon sits on the
- * speed digits. An ofs_y of 0 puts the 7px body one pixel below the line top. */
+/* line_height and base_line match Montserrat 12. Digits and the space come
+ * from that font; only the private-use character is drawn from this one.
+ * An ofs_y of 0 puts the 9px icon on the same band as the 12px digits. */
 static const lv_font_t mouse_icon_font = {
     .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,
     .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,
-    .line_height = 10,
-    .base_line = 2,
+    .line_height = 15,
+    .base_line = 3,
     .subpx = LV_FONT_SUBPX_NONE,
     .kerning = LV_FONT_KERNING_NONE,
     .underline_position = 0,
     .underline_thickness = 0,
     .dsc = &mouse_icon_dsc,
+    .fallback = &lv_font_montserrat_12,
 };
-
-/* Montserrat 12 is 15px and Montserrat 8 is 10px. The panel is 32px, so the
- * status icons stay at 12 and the two lower rows use 8. The 12px font's 3px
- * of baseline padding is where the layer row starts. */
-#define LAYER_ROW_Y 12
-#define SPEED_ROW_Y 22
-#define SPEED_TEXT_X 11
 
 static lv_obj_t *speed_label;
 
@@ -209,7 +208,7 @@ static void speed_label_update(uint16_t speed) {
     if (speed_label == NULL) {
         return;
     }
-    lv_label_set_text_fmt(speed_label, "%u", (unsigned int)speed);
+    lv_label_set_text_fmt(speed_label, "%u " MOUSE_ICON, (unsigned int)speed);
 }
 
 static uint16_t speed_label_get_state(const zmk_event_t *eh) {
@@ -233,7 +232,7 @@ lv_obj_t *zmk_display_status_screen() {
 
     zmk_widget_battery_status_init(&battery_status_widget, screen);
     lv_obj_set_style_text_font(zmk_widget_battery_status_obj(&battery_status_widget),
-                               &lv_font_montserrat_12, LV_PART_MAIN);
+                               &lv_font_montserrat_16, LV_PART_MAIN);
     lv_obj_align(zmk_widget_battery_status_obj(&battery_status_widget), LV_ALIGN_TOP_RIGHT, 0, 0);
 #endif
 
@@ -242,7 +241,7 @@ lv_obj_t *zmk_display_status_screen() {
 
     zmk_widget_output_status_init(&output_status_widget, screen);
     lv_obj_set_style_text_font(zmk_widget_output_status_obj(&output_status_widget),
-                               &lv_font_montserrat_12, LV_PART_MAIN);
+                               &lv_font_montserrat_16, LV_PART_MAIN);
     lv_obj_align(zmk_widget_output_status_obj(&output_status_widget), LV_ALIGN_TOP_LEFT, 0, 0);
 #endif
 
@@ -251,19 +250,14 @@ lv_obj_t *zmk_display_status_screen() {
 
     zmk_widget_layer_status_init(&layer_status_widget, screen);
     lv_obj_set_style_text_font(zmk_widget_layer_status_obj(&layer_status_widget),
-                               &lv_font_montserrat_8, LV_PART_MAIN);
-    lv_obj_align(zmk_widget_layer_status_obj(&layer_status_widget), LV_ALIGN_TOP_LEFT, 0,
-                 LAYER_ROW_Y);
+                               &lv_font_montserrat_12, LV_PART_MAIN);
+    lv_obj_align(zmk_widget_layer_status_obj(&layer_status_widget), LV_ALIGN_BOTTOM_LEFT, 0, 0);
 #endif
 
-    lv_obj_t *icon = lv_label_create(screen);
-    lv_obj_set_style_text_font(icon, &mouse_icon_font, LV_PART_MAIN);
-    lv_label_set_text(icon, MOUSE_ICON);
-    lv_obj_align(icon, LV_ALIGN_TOP_LEFT, 0, SPEED_ROW_Y);
-
+    /* Right edge stays put when the number grows from 90 to 3600. */
     speed_label = lv_label_create(screen);
-    lv_obj_set_style_text_font(speed_label, &lv_font_montserrat_8, LV_PART_MAIN);
-    lv_obj_align(speed_label, LV_ALIGN_TOP_LEFT, SPEED_TEXT_X, SPEED_ROW_Y);
+    lv_obj_set_style_text_font(speed_label, &mouse_icon_font, LV_PART_MAIN);
+    lv_obj_align(speed_label, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
     mouse_speed_status_init();
 
     return screen;

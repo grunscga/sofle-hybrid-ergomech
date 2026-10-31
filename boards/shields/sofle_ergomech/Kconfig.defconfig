@@ -11,7 +11,7 @@ config ZMK_SPLIT_ROLE_CENTRAL
 
 if ZMK_DISPLAY
 
-# The left OLED adds a cursor-speed row to the normal status screen.
+# The left OLED puts the cursor speed on the layer row.
 # The right half keeps the built-in peripheral screen.
 choice ZMK_DISPLAY_STATUS_SCREEN
     default ZMK_DISPLAY_STATUS_SCREEN_CUSTOM
@@ -30,15 +30,15 @@ config ZMK_WIDGET_LAYER_STATUS
 config LV_USE_THEME_MONO
     default y
 
-# 12px status icons, 8px layer name and speed. See the status screen.
+# Same sizes as the stock screen: 16px status icons, 12px layer row.
+config LV_FONT_MONTSERRAT_16
+    default y
+
 config LV_FONT_MONTSERRAT_12
     default y
 
-config LV_FONT_MONTSERRAT_8
-    default y
-
 choice LV_FONT_DEFAULT
-    default LV_FONT_DEFAULT_MONTSERRAT_12
+    default LV_FONT_DEFAULT_MONTSERRAT_16
 endchoice
 
 endif # ZMK_DISPLAY
