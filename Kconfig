@@ -12,3 +12,9 @@ DT_COMPAT_ZMK_INPUT_PROCESSOR_MOUSE_SPEED := zmk,input-processor-mouse-speed
 config ZMK_INPUT_PROCESSOR_MOUSE_SPEED
     bool
     default $(dt_compat_enabled,$(DT_COMPAT_ZMK_INPUT_PROCESSOR_MOUSE_SPEED))
+
+DT_COMPAT_ZMK_BEHAVIOR_BT_PROFILE := zmk,behavior-bt-profile
+
+config ZMK_BEHAVIOR_BT_PROFILE
+    bool
+    default $(dt_compat_enabled,$(DT_COMPAT_ZMK_BEHAVIOR_BT_PROFILE))

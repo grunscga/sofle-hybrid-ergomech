@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Greg Grunschel
+# SPDX-License-Identifier: MIT
+
+description: Select a Bluetooth profile, and restart advertising if it is already selected
+
+compatible: "zmk,behavior-bt-profile"
+
+include: one_param.yaml

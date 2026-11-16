@@ -30,7 +30,10 @@
 #define MS_INC 1
 
 /* Hold the hat to accelerate. Speed reaches 1800 after 600ms,
- * so the slope matches the previous 900-over-300ms ramp. */
+ * so the slope matches the previous 900-over-300ms ramp.
+ * Directions are arrows on the base layer and when both layer keys are held.
+ * Holding either layer key alone makes those directions a mouse.
+ * The center click is a left click on every layer. */
 &mmv {
     time-to-max-speed-ms = <600>;
     acceleration-exponent = <1>;
@@ -51,6 +54,12 @@
 
         ms_spd: ms_spd {
             compatible = "zmk,behavior-mouse-speed";
+            #binding-cells = <1>;
+        };
+
+        /* Selecting the profile that is already active restarts advertising. */
+        bt_sel: bt_sel {
+            compatible = "zmk,behavior-bt-profile";
             #binding-cells = <1>;
         };
     };
@@ -81,14 +90,14 @@
 // |  CTRL |   A   |    O    |   E    |   U     |   I      |                     |   D     |    H    |   T     |  N     |   S    |   -   |
 // | SHIFT |   ;   |    Q    |   J    |   K     |   X      |  ENTER  |  |        |   B     |    M    |   W     |  V     |   Z    |   \   |
 //                 |   GUI   |  ALT   |  LOWER  |  RAISE   |  SPACE  |  |  SPACE |  DEL    |  CTRL   |  SHIFT  | ENTER  |
-//                                                                  HAT:|  LCLK  | MOVE_R  | MOVE_U  | MOVE_L  | MOVE_D |
+//                                                                  HAT:|  LCLK  | RIGHT   |   UP    |  LEFT   |  DOWN  |
             bindings = <
 &kp GRAVE &kp N1   &kp N2    &kp N3   &kp N4    &kp N5                           &kp N6    &kp N7    &kp N8    &kp N9   &kp N0   &kp EQUAL
 &kp TAB   &kp APOS &kp COMMA &kp DOT  &kp P     &kp Y                            &kp F     &kp G     &kp C     &kp R    &kp L    &kp FSLH
 &kp LCTRL &kp A    &kp O     &kp E    &kp U     &kp I                            &kp D     &kp H     &kp T     &kp N    &kp S    &kp MINUS
 &kp LSHFT &kp SEMI &kp Q     &kp J    &kp K     &kp X      &kp ENTER             &kp B     &kp M     &kp W     &kp V    &kp Z    &kp BSLH
                    &kp LGUI  &kp LALT &mo LOWER &mo RAISE  &kp SPACE  &kp SPACE  &kp DEL   &kp RCTRL &kp RSHFT &kp ENTER
-                                                                      &mkp LCLK  &mmv MOVE_RIGHT &mmv MOVE_UP &mmv MOVE_LEFT &mmv MOVE_DOWN
+                                                                      &mkp LCLK  &kp RIGHT &kp UP &kp LEFT &kp DOWN
             >;
 
             sensor-bindings = <&scroll_wheel WHEEL_DN WHEEL_UP &scroll_wheel WHEEL_DN WHEEL_UP>;
@@ -102,14 +111,14 @@
 // |       |   REDO      |            |             |              |            |                 |  RET    |  LEFT   |  DOWN   |  RIGHT  |  PG_DN  |C_VOL_UP|
 // |       |   UNDO      |   CUT      |   COPY      |   PASTE      |            |      |  |       |  ENTER  |  LCLK   |  MCLK   |  RCLK   |         |C_VOL_DN|
 //                       |            |             |              |            | SPACE|  | SPACE |  LEFT   |   UP    |  DOWN   |  RIGHT |
-//                                                                                    HAT:| LCLK  | RIGHT  |   UP   |  LEFT  |  DOWN  |
+//                                                                                    HAT:| LCLK  | MOVE_R | MOVE_U | MOVE_L | MOVE_D |
             bindings = <
 &trans     &trans        &trans       &trans        &trans         &trans                         &none     &none     &none     &kp LBKT  &kp RBKT  &kp DEL
 &trans     &kp INS       &mkp MB4     &mkp MB5      &kp CAPS       &none                          &kp BSPC  &kp HOME  &kp UP    &kp END   &kp PG_UP &kp C_MUTE
 &trans     &kp LC(Y)     &none        &none         &none          &none                          &kp RET   &kp LEFT  &kp DOWN  &kp RIGHT &kp PG_DN &kp C_VOL_UP
 &trans     &kp LC(Z)     &kp LC(X)    &kp LC(C)     &kp LC(V)      &none        &none             &kp ENTER &mkp LCLK &mkp MCLK &mkp RCLK &none     &kp C_VOL_DN
                          &trans       &trans        &trans         &trans       &trans  &trans    &kp LEFT  &kp UP    &kp DOWN  &kp RIGHT
-                                                                                        &mkp LCLK &kp RIGHT &kp UP &kp LEFT &kp DOWN
+                                                                                        &mkp LCLK &mmv MOVE_RIGHT &mmv MOVE_UP &mmv MOVE_LEFT &mmv MOVE_DOWN
             >;
 
             sensor-bindings = <&scroll_wheel WHEEL_DN WHEEL_UP &scroll_wheel WHEEL_DN WHEEL_UP>;
@@ -147,7 +156,7 @@
 //                    |         |         |         |         |         | |          |      |      |       |      |
 //                                                                    HAT:| LCLK     | DOWN |  UP  | RIGHT | LEFT |
             bindings = <
-&bt BT_CLR        &bt BT_SEL 0    &bt BT_SEL 1    &bt BT_SEL 2    &bt BT_SEL 3    &bt BT_SEL 4                                &none     &none     &none     &none     &none &ms_spd MS_INC
+&bt BT_CLR        &bt_sel 0       &bt_sel 1       &bt_sel 2       &bt_sel 3       &bt_sel 4                                      &none     &none     &none     &none     &none &ms_spd MS_INC
 &ext_power EP_TOG &rgb_ug RGB_HUD &rgb_ug RGB_HUI &rgb_ug RGB_SAD &rgb_ug RGB_SAI &rgb_ug RGB_EFF                             &none     &none     &none     &none     &none &none
 &none             &rgb_ug RGB_BRD &rgb_ug RGB_BRI &none           &none           &none                                       &none     &none     &none     &none     &none &ms_spd MS_DEC
 &none             &none           &none           &none           &none           &none            &rgb_ug RGB_TOG            &none     &none     &none     &none     &none &none

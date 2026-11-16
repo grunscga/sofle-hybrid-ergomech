@@ -125,10 +125,10 @@ static int save_slots(void) {
 
 #if IS_ENABLED(CONFIG_ZMK_DISPLAY) && IS_ENABLED(CONFIG_ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)
 
+#include <output_status.h>
 #include <zmk/display/status_screen.h>
 #include <zmk/display/widgets/battery_status.h>
 #include <zmk/display/widgets/layer_status.h>
-#include <zmk/display/widgets/output_status.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/endpoint_changed.h>
@@ -237,12 +237,9 @@ lv_obj_t *zmk_display_status_screen() {
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_WIDGET_OUTPUT_STATUS)
-    static struct zmk_widget_output_status output_status_widget;
-
-    zmk_widget_output_status_init(&output_status_widget, screen);
-    lv_obj_set_style_text_font(zmk_widget_output_status_obj(&output_status_widget),
-                               &lv_font_montserrat_16, LV_PART_MAIN);
-    lv_obj_align(zmk_widget_output_status_obj(&output_status_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+    sofle_output_status_init(screen);
+    lv_obj_set_style_text_font(sofle_output_status_obj(), &lv_font_montserrat_16, LV_PART_MAIN);
+    lv_obj_align(sofle_output_status_obj(), LV_ALIGN_TOP_LEFT, 0, 0);
 #endif
 
 #if IS_ENABLED(CONFIG_ZMK_WIDGET_LAYER_STATUS)
